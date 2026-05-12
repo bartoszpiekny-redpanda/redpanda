@@ -180,11 +180,36 @@ def read_topic_properties_serde(rdr: Reader, version):
 
 
 def read_iceberg_mode(rdr: Reader):
+    # Discriminant is serialized as int32_t (serde_enum_serialized_t), matching
+    # the original iceberg_mode::variant enum encoding.
     variant = rdr.read_serde_enum()
-    protobuf_value = None
-    if variant == 3:
-        protobuf_value = rdr.read_string()
-    return {"variant": variant, "protobuf_value": protobuf_value}
+    if variant == 3:  # value_schema_latest
+        protobuf_name = rdr.read_string()
+        subject = rdr.read_string()
+        return {"variant": variant, "protobuf_name": protobuf_name, "subject": subject}
+    if variant == 4:  # key_and_value_schema (new format)
+        key_mode = rdr.read_serde_enum()
+        key_subject = rdr.read_string()
+        key_protobuf_name = rdr.read_string()
+        value_mode = rdr.read_serde_enum()
+        value_subject = rdr.read_string()
+        value_protobuf_name = rdr.read_string()
+        headers_value_type = rdr.read_serde_enum()
+        return {
+            "variant": variant,
+            "key": {
+                "mode": key_mode,
+                "subject": key_subject,
+                "protobuf_name": key_protobuf_name,
+            },
+            "value": {
+                "mode": value_mode,
+                "subject": value_subject,
+                "protobuf_name": value_protobuf_name,
+            },
+            "headers": {"value_type": headers_value_type},
+        }
+    return {"variant": variant}
 
 
 def read_topic_config(rdr: Reader, version):

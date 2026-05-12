@@ -371,12 +371,27 @@ create_topic_properties_update(
                 continue;
             }
             if (cfg.name == topic_property_iceberg_mode) {
-                parse_and_set_property(
-                  tp_ns,
-                  update.properties.iceberg_mode,
-                  cfg.value,
-                  kafka::config_resource_operation::set,
-                  iceberg_config_validator{});
+                if (cfg.value) {
+                    auto parsed = model::parse_iceberg_mode(*cfg.value);
+                    if (!parsed) {
+                        return make_error_alter_config_resource_response<
+                          alter_configs_resource_response>(
+                          resource,
+                          error_code::invalid_config,
+                          std::move(parsed.error()));
+                    }
+                    auto v_error = iceberg_config_validator{}(
+                      tp_ns, *cfg.value, *parsed);
+                    if (v_error) {
+                        return make_error_alter_config_resource_response<
+                          alter_configs_resource_response>(
+                          resource,
+                          error_code::invalid_config,
+                          std::move(*v_error));
+                    }
+                    update.properties.iceberg_mode = {
+                      std::move(*parsed), op_t::set};
+                }
                 continue;
             }
             if (cfg.name == topic_property_leaders_preference) {

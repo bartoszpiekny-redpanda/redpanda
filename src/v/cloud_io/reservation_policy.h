@@ -13,6 +13,7 @@
 #include "cloud_io/reservation_policy_types.h"
 #include "cloud_io/scheduler_policy.h"
 #include "cloud_io/scheduler_types.h"
+#include "metrics/metrics.h"
 
 #include <seastar/core/abort_source.hh>
 #include <seastar/core/future.hh>
@@ -124,6 +125,8 @@ private:
     /// to the common pool.
     std::optional<group_id> pick_refill_candidate() noexcept;
 
+    void setup_metrics();
+
     size_t _current_total_capacity{0};
     /// The common pool of slots. Any group can claim from it; releases
     /// go back here unless refill diverts them into a group's
@@ -141,6 +144,9 @@ private:
     static constexpr
       typename Clock::duration reclaim_interval = std::chrono::seconds{1};
     ss::timer<Clock> _reclaim_timer;
+
+    metrics::internal_metric_groups _metrics;
+    metrics::public_metric_groups _public_metrics;
 };
 
 extern template class reservation_policy<ss::lowres_clock>;

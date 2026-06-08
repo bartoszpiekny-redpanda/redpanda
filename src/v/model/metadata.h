@@ -740,6 +740,17 @@ public:
         return std::holds_alternative<disabled_impl>(_impl);
     }
 
+    /// Returns true if this mode would be encoded using the new wire
+    /// discriminant (4), which requires all cluster nodes to be upgraded.
+    bool needs_extended_cluster_feature() const noexcept {
+        if (is_disabled()) {
+            return false;
+        }
+        const auto& e = std::get<enabled_impl>(_impl);
+        return e.key.mode != schema_mode::binary
+               || e.headers.value_type != header_schema_mode::binary;
+    }
+
     /// \pre !is_disabled()
     const key_config& key() const { return std::get<enabled_impl>(_impl).key; }
     /// \pre !is_disabled()

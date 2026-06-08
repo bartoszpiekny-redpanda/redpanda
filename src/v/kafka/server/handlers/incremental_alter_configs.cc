@@ -393,6 +393,18 @@ create_topic_properties_update(
                           error_code::invalid_config,
                           std::move(*v_error));
                     }
+                    if (
+                      parsed->needs_extended_cluster_feature()
+                      && !ctx.feature_table().local().is_active(
+                        features::feature::iceberg_extended_mode_config)) {
+                        return make_error_alter_config_resource_response<
+                          resp_resource_t>(
+                          resource,
+                          error_code::invalid_config,
+                          "Invalid iceberg mode: extended key/headers config "
+                          "requires the cluster to be fully upgraded to at "
+                          "least v26.2.1.");
+                    }
                     update.properties.iceberg_mode = {
                       std::move(*parsed),
                       cluster::incremental_update_operation::set};

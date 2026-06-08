@@ -285,7 +285,8 @@ struct iceberg_config_validator {
         "level.";
     static constexpr error_code ec = error_code::invalid_config;
 
-    static bool is_valid(const creatable_topic& c, features::feature_table*) {
+    static bool
+    is_valid(const creatable_topic& c, features::feature_table* ft) {
         model::iceberg_mode parsed_mode = model::iceberg_mode::disabled;
 
         auto mode_it = std::find_if(
@@ -339,7 +340,15 @@ struct iceberg_config_validator {
         // be created with any override. If it is disabled
         // at the cluster level, it cannot be enabled with a topic
         // override.
-        return config::shard_local_cfg().iceberg_enabled();
+        if (!config::shard_local_cfg().iceberg_enabled()) {
+            return false;
+        }
+        if (
+          parsed_mode.needs_extended_cluster_feature()
+          && (ft == nullptr || !ft->is_active(features::feature::iceberg_extended_mode_config))) {
+            return false;
+        }
+        return true;
     }
 };
 

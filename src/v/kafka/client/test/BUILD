@@ -549,6 +549,35 @@ redpanda_cc_gtest(
 )
 
 redpanda_cc_gtest(
+    name = "consumer_fetch_test",
+    timeout = "short",
+    srcs = [
+        "consumer_fetch_test.cc",
+    ],
+    deps = [
+        ":cluster_mock",
+        ":utils",
+        "//src/v/kafka/client",
+        "//src/v/kafka/client:brokers",
+        "//src/v/kafka/client:configuration",
+        "//src/v/kafka/client:exceptions",
+        "//src/v/kafka/client:logger",
+        "//src/v/kafka/client:topic_cache",
+        "//src/v/kafka/protocol",
+        "//src/v/kafka/protocol:fetch",
+        "//src/v/kafka/protocol:heartbeat",
+        "//src/v/kafka/protocol:join_group",
+        "//src/v/kafka/protocol:leave_group",
+        "//src/v/kafka/protocol:offset_fetch",
+        "//src/v/kafka/protocol:sync_group",
+        "//src/v/model",
+        "//src/v/test_utils:gtest",
+        "@googletest//:gtest",
+        "@seastar",
+    ],
+)
+
+redpanda_cc_gtest(
     name = "client_stop_test",
     timeout = "short",
     srcs = [

@@ -2850,10 +2850,11 @@ TEST_F(storage_test_fixture, read_write_truncate) {
             })
             .then([](chunked_circular_buffer<model::record_batch> batches) {
                 if (batches.empty()) {
-                    SUCCEED() << "read empty range";
+                    vlog(e2e_test_log.trace, "read empty range");
                     return;
                 }
-                SUCCEED() << fmt::format(
+                vlog(
+                  e2e_test_log.trace,
                   "read range: {}, {}",
                   batches.front().base_offset(),
                   batches.back().last_offset());
@@ -3923,7 +3924,7 @@ TEST_F(storage_test_fixture, issue_8091) {
     auto log = manage_log(mgr, storage::ntp_config(ntp, mgr.config().base_dir));
 
     int cnt = 0;
-    int max = 50; // NB: Reduced for GTest due to OOM; hopefully temporary.
+    int max = 500;
     ssx::mutex log_mutex{"e2e_test::log_mutex"};
     model::offset last_truncate;
 
@@ -3955,15 +3956,17 @@ TEST_F(storage_test_fixture, issue_8091) {
             .should_fsync = storage::log_append_config::fsync::no,
             .timeout = model::no_timeout,
           };
-          SUCCEED() << "append";
+          vlog(e2e_test_log.trace, "append");
           return log_mutex
             .with([reader = std::move(reader), cfg, &log]() mutable {
-                SUCCEED() << "append_lock";
+                vlog(e2e_test_log.trace, "append_lock");
                 return std::move(reader)
                   .for_each_ref(log->make_appender(cfg), cfg.timeout)
                   .then([](storage::append_result res) {
-                      SUCCEED()
-                        << fmt::format("append_result: {}", res.last_offset);
+                      vlog(
+                        e2e_test_log.trace,
+                        "append_result: {}",
+                        res.last_offset);
                   })
                   .then([&log] { return log->flush(); });
             })
@@ -3991,10 +3994,11 @@ TEST_F(storage_test_fixture, issue_8091) {
             })
             .then([](chunked_circular_buffer<model::record_batch> batches) {
                 if (batches.empty()) {
-                    SUCCEED() << "read empty range";
+                    vlog(e2e_test_log.trace, "read empty range");
                     return;
                 }
-                SUCCEED() << fmt::format(
+                vlog(
+                  e2e_test_log.trace,
                   "read range: {}, {}",
                   batches.front().base_offset(),
                   batches.back().last_offset());
@@ -4011,7 +4015,7 @@ TEST_F(storage_test_fixture, issue_8091) {
           return log_mutex
             .with([&log, &last_truncate] {
                 auto offset = log->offsets();
-                SUCCEED() << fmt::format("truncate offsets: {}", offset);
+                vlog(e2e_test_log.trace, "truncate offsets: {}", offset);
                 auto start = ss::steady_clock_type::now();
                 last_truncate = offset.dirty_offset;
                 return log
@@ -4020,7 +4024,7 @@ TEST_F(storage_test_fixture, issue_8091) {
                       // assert that truncation took less than 5 seconds
                       ASSERT_LT(
                         (ss::steady_clock_type::now() - start) / 1ms, 5000);
-                      SUCCEED() << "truncate_done";
+                      vlog(e2e_test_log.trace, "truncate_done");
                   });
             })
             .then([] { return ss::sleep(10ms); });
